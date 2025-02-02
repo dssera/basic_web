@@ -1,0 +1,6 @@
+/.idea
+/.venv
+/.env
+/dev_notes.md
+/*.db
+/alembic.ini
