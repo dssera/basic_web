@@ -8,7 +8,51 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from app.db import SessionLocal
 
+
 # should be splited into separated repos
+
+class BuildingRepository:
+    def get_buildings_by_city(
+            self,
+            city: str
+    ):
+        try:
+            session: Session = SessionLocal()
+            try:
+                buildings = (session.query(models.Building)
+                             .filter(models.Building.city == city))
+                return [schemas.Building.model_validate(building) for building in buildings]
+            finally:
+                session.close()
+        except ValidationError as e:
+            print(f"ValidationError: {e}")
+            print(traceback.format_exc())
+        except SQLAlchemyError as e:
+            print(f"SQLAlchemyError: {e}")
+            print(traceback.format_exc())
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            print(traceback.format_exc())
+
+
+class ActivityRepository:
+    def get_all_subactivities(
+            self,
+            activity_name,
+            session,
+            depth=0,
+            max_depth=3
+    ) -> list[schemas.Activity]:
+        activity = session.query(models.Activity).filter_by(name=activity_name).first()
+        if not activity or depth > max_depth:
+            return []
+        subactivities = []
+        for child in activity.children:
+            subactivities.append(child)
+            subactivities.extend(self.get_all_subactivities(child.name, session, depth + 1, max_depth))
+        return [schemas.Activity.model_validate(act) for
+                        act in subactivities]
+
 class OrganizationRepository:
     """
         В методах создается объект сессии, что есть плохо, т к это не
@@ -96,49 +140,15 @@ class OrganizationRepository:
             print(f"ValidationError: {e}")
             print(traceback.format_exc())
 
-    def get_buildings_by_city(
-            self,
-            city: str
-    ):
-        try:
-            session: Session = SessionLocal()
-            try:
-                buildings = (session.query(models.Building)
-                             .filter(models.Building.city == city))
-                return [schemas.Building.model_validate(building) for building in buildings]
-            finally:
-                session.close()
-        except ValidationError as e:
-            print(f"ValidationError: {e}")
-            print(traceback.format_exc())
-        except SQLAlchemyError as e:
-            print(f"SQLAlchemyError: {e}")
-            print(traceback.format_exc())
-        except Exception as e:
-            print(f"An unexpected error occurred: {e}")
-            print(traceback.format_exc())
 
-    def get_all_subactivities(
-            self,
-            activity_name,
-            session,
-            depth=0,
-            max_depth=3
-    ):
-        activity = session.query(models.Activity).filter_by(name=activity_name).first()
-        if not activity or depth > max_depth:
-            return []
-        subactivities = []
-        for child in activity.children:
-            subactivities.append(child)
-            subactivities.extend(self.get_all_subactivities(child.name, session, depth + 1, max_depth))
-        return subactivities
 
-    def find_organizations_by_activity(self, activity_name):
+
+
+    def find_organizations_by_activity(self, activity_name, subactivities: list[schemas.Activity]):
         try:
             session = SessionLocal()
             try:
-                all_activities = (self.get_all_subactivities(activity_name, session) +
+                all_activities = (subactivities +
                                   [session.query(models.Activity)
                                   .filter_by(name=activity_name)
                                   .first()])
