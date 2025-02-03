@@ -39,19 +39,33 @@ class ActivityRepository:
     def get_all_subactivities(
             self,
             activity_name,
-            session,
             depth=0,
             max_depth=3
     ) -> list[schemas.Activity]:
-        activity = session.query(models.Activity).filter_by(name=activity_name).first()
-        if not activity or depth > max_depth:
-            return []
-        subactivities = []
-        for child in activity.children:
-            subactivities.append(child)
-            subactivities.extend(self.get_all_subactivities(child.name, session, depth + 1, max_depth))
-        return [schemas.Activity.model_validate(act) for
+        try:
+            session: Session = SessionLocal()
+            try:
+                activity = session.query(models.Activity).filter_by(name=activity_name).first()
+                if not activity or depth > max_depth:
+                    return []
+                subactivities = []
+                for child in activity.children:
+                    subactivities.append(child)
+                    subactivities.extend(self.get_all_subactivities(child.name, session, depth + 1, max_depth))
+                return [schemas.Activity.model_validate(act) for
                         act in subactivities]
+            finally:
+                session.close()
+        except ValidationError as e:
+            print(f"ValidationError: {e}")
+            print(traceback.format_exc())
+        except SQLAlchemyError as e:
+            print(f"SQLAlchemyError: {e}")
+            print(traceback.format_exc())
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            print(traceback.format_exc())
+
 
 class OrganizationRepository:
     """
