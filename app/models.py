@@ -48,7 +48,7 @@ class Organization(Base):
     activities = relationship("Activity",
                               secondary="organization_activities",
                               back_populates="organizations")
-    phone_numbers = relationship("PhoneNumber", back_populates="organizations")
+    phone_numbers = relationship("PhoneNumber", back_populates="organization")
 
 
 class Activity(Base):
