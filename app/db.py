@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 
 from .config import DATABASE_URL
 
-sqlite_url = DATABASE_URL
+sqlite_url = DATABASE_URL[:11] + '.' + DATABASE_URL[11:]  # to access parent dir
 connect_args = {"check_same_thread": False}
 engine = create_engine(sqlite_url, connect_args=connect_args)
 
