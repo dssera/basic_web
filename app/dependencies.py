@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 
-from app.organization_repository import OrganizationRepository
+from app.repositories import OrganizationRepository
 from app.services import OrganizationService
 
 from app.config import API_SECRET_KEY
