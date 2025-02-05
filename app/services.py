@@ -2,37 +2,29 @@ from geopy import Nominatim
 from geopy.distance import distance
 
 from .repositories import OrganizationRepository, BuildingRepository, ActivityRepository
+from .uow import unit_of_work, UnitOfWork
 
 
 class BuildingService:
-    def __init__(self,
-                 building_repo: BuildingRepository,
-                 organization_repo: OrganizationRepository):
-        self.building_repo = building_repo
-        self.organization_repo = organization_repo
 
     def get_by_coordinates(self, latitude: float, longitude: float, r: float):
         # shitty method name btw: get_buildings_with_organizations_by_coordinates
-        city = GeoUtils.find_city_by_coordinates(latitude, longitude)
-        if not city:
-            return None
-        buildings = self.building_repo.get_buildings_by_city(city)
-        result_list = []
-        for b in buildings:
-            if GeoUtils.is_within_radius(latitude, longitude, b.latitude, b.longitude, r):
-                building_dict = b.model_dump()
-                building_dict["organizations"] = (
-                    self.organization_repo.get_organizations_by_building_address(b.city, b.street, b.house))
-                result_list.append(building_dict)
-        return result_list
+        with unit_of_work() as uow:
+            city = GeoUtils.find_city_by_coordinates(latitude, longitude)
+            if not city:
+                return None
+            buildings = uow.building_repository.get_buildings_by_city(city)
+            result_list = []
+            for b in buildings:
+                if GeoUtils.is_within_radius(latitude, longitude, b.latitude, b.longitude, r):
+                    building_dict = b.model_dump()
+                    building_dict["organizations"] = (
+                        uow.organization_repository.get_organizations_by_building_address(b.city, b.street, b.house))
+                    result_list.append(building_dict)
+            return result_list
 
 
 class OrganizationService:
-
-    def __init__(self, organization_repo: OrganizationRepository,
-                 activity_repo: ActivityRepository):
-        self.organization_repo = organization_repo
-        self.activity_repo = activity_repo
 
     def get_organizations_by_building_address(
             self,
@@ -40,20 +32,25 @@ class OrganizationService:
             street: str,
             house: str
     ):
-        return self.organization_repo.get_organizations_by_building_address(city, street, house)
+        with unit_of_work() as uow:
+            return uow.session.get_organizations_by_building_address(city, street, house)
 
     def get_organizations_by_activity(self, activity: str):
-        return self.organization_repo.get_organizations_by_activity(activity)
+        with unit_of_work() as uow:
+            return uow.session.get_organizations_by_activity(activity)
 
     def get_organization_by_id(self, organization_id: int):
-        return self.organization_repo.get_organization_by_id(organization_id)
+        with unit_of_work() as uow:
+            return uow.organization_repository.get_organization_by_id(organization_id)
 
     def get_organization_by_name(self, name: str):
-        return self.organization_repo.get_organization_by_name(name)
+        with unit_of_work() as uow:
+            return uow.session.get_organization_by_name(name)
 
     def get_organizations_by_subactivities(self, activity: str):
-        subactivities = self.activity_repo.get_all_subactivities(activity)
-        return self.organization_repo.find_organizations_by_activity(activity, subactivities)
+        with unit_of_work() as uow:
+            subactivities = uow.activity_repository.get_all_subactivities(activity)
+            return uow.organization_repository.find_organizations_by_activity(activity, subactivities)
 
 
 class GeoUtils:
