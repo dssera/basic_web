@@ -7,13 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, relationship
 
 from app import services, schemas
-from app.dependencies import organization_service
 from app.services import OrganizationService, BuildingService
 
 router = APIRouter()
 
-organization_service_dep = Annotated[OrganizationService, Depends(organization_service)]
-building_service_dep = Annotated[BuildingService, Depends(organization_service)]
+organization_service_dep = Annotated[OrganizationService, Depends()]
+building_service_dep = Annotated[BuildingService, Depends()]
 
 
 @router.get("/get_organizations_by_building_address",
