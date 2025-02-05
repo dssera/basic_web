@@ -14,7 +14,8 @@ class BuildingRepository:
             city: str
     ):
         buildings = (self.session.query(models.Building)
-                     .filter(models.Building.city == city))
+                     .filter(models.Building.city == city)
+                     .all())
         return [schemas.Building.model_validate(building) for building in buildings]
 
 
@@ -66,7 +67,8 @@ class OrganizationRepository:
     ) -> List[schemas.Organization] | None:
         organizations = (self.session.query(models.Organization)
                          .join(models.Organization.activities)
-                         .filter(models.Activity.name == activity))
+                         .filter(models.Activity.name == activity)
+                         .all())
         return [schemas.Organization.model_validate(org) for
                 org in organizations]
 
@@ -77,7 +79,7 @@ class OrganizationRepository:
         org = (self.session.query(models.Organization)
                .filter(models.Organization.id == organization_id)
                .first())
-        return schemas.Organization.model_validate(org)
+        return schemas.Organization.model_validate(org) if org else None
 
     def get_organization_by_name(
             self,
@@ -86,7 +88,7 @@ class OrganizationRepository:
         org = (self.session.query(models.Organization)
                .filter(models.Organization.name == name)
                .first())
-        return schemas.Organization.model_validate(org)
+        return schemas.Organization.model_validate(org) if org else None
 
     def find_organizations_by_activity(self, activity_name, subactivities: list[schemas.Activity]):
         all_activities = (subactivities +
