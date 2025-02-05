@@ -33,11 +33,11 @@ class OrganizationService:
             house: str
     ):
         with unit_of_work() as uow:
-            return uow.session.get_organizations_by_building_address(city, street, house)
+            return uow.organization_repository.get_organizations_by_building_address(city, street, house)
 
     def get_organizations_by_activity(self, activity: str):
         with unit_of_work() as uow:
-            return uow.session.get_organizations_by_activity(activity)
+            return uow.organization_repository.get_organizations_by_activity(activity)
 
     def get_organization_by_id(self, organization_id: int):
         with unit_of_work() as uow:
@@ -45,7 +45,7 @@ class OrganizationService:
 
     def get_organization_by_name(self, name: str):
         with unit_of_work() as uow:
-            return uow.session.get_organization_by_name(name)
+            return uow.organization_repository.get_organization_by_name(name)
 
     def get_organizations_by_subactivities(self, activity: str):
         with unit_of_work() as uow:
