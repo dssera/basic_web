@@ -4,3 +4,8 @@
 /dev_notes.md
 /*.db
 /alembic.ini
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+*.pyo
