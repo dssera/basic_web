@@ -1,11 +1,12 @@
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy import create_engine
 
-from .config import DATABASE_URL
+from .config import settings
 
-sqlite_url = DATABASE_URL[:11] + '.' + DATABASE_URL[11:]  # to access parent dir
-connect_args = {"check_same_thread": False}
-engine = create_engine(sqlite_url, connect_args=connect_args)
+engine = create_engine(
+    url=settings.DATABASE_URL_psycopg,
+    echo=True
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
