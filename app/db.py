@@ -1,13 +1,12 @@
-from sqlalchemy.orm import declarative_base, sessionmaker
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.orm import declarative_base
 
-from .config import settings
+from app.config import settings
 
-engine = create_engine(
+async_engine = create_async_engine(
     url=settings.DATABASE_URL_psycopg,
     echo=True
 )
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+AsyncSessionLocal = async_sessionmaker(autocommit=False, autoflush=False, bind=async_engine)
 
 Base = declarative_base()
