@@ -2,12 +2,18 @@ from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 
+class PhoneNumber(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    phone_number: str
+
+
 class OrganizationBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     name: str
-    phone_numbers: Optional[str] = None
-    building_id: int
+    phone_numbers: List[PhoneNumber]
 
 
 class OrganizationCreate(OrganizationBase):
@@ -33,11 +39,9 @@ class BuildingCreate(BuildingBase):
 
 
 class Building(BuildingBase):
-    id: int
-    organizations: List[Organization] = []
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        orm_mode = True
+    id: int
 
 
 class ActivityBase(BaseModel):
@@ -52,12 +56,11 @@ class ActivityCreate(ActivityBase):
 
 
 class Activity(ActivityBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     children: "List[Activity]" = []
     organizations: List[Organization] = []
-
-    class Config:
-        orm_mode = True
 
 
 Activity.model_rebuild()

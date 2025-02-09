@@ -1,20 +1,20 @@
 import traceback
-from contextlib import contextmanager
 
-from sqlalchemy.orm import Session
+from contextlib import asynccontextmanager
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import BuildingRepository, ActivityRepository, OrganizationRepository
-from app.db import SessionLocal
+from app.db import AsyncSessionLocal
 
 
 class UnitOfWork:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self.session = session
         self._building_repository = None
         self._activity_repository = None
         self._organization_repository = None
 
-    # create repo only if need
     @property
     def building_repository(self):
         if self._building_repository is None:
@@ -33,27 +33,27 @@ class UnitOfWork:
             self._organization_repository = OrganizationRepository(self.session)
         return self._organization_repository
 
-    def commit(self):
-        self.session.commit()
+    async def commit(self):
+        await self.session.commit()
 
-    def rollback(self):
-        self.session.rollback()
+    async def rollback(self):
+        await self.session.rollback()
 
-    def close(self):
-        self.session.close()
+    async def close(self):
+        await self.session.close()
 
 
-@contextmanager
-def unit_of_work():
-    session = SessionLocal()
+@asynccontextmanager
+async def unit_of_work():
+    session = AsyncSessionLocal()
     uow = UnitOfWork(session)
     try:
         yield uow
-        uow.commit()
+        await uow.commit()
     except Exception as e:
-        uow.rollback()
+        await uow.rollback()
         print(f"ValidationError: {e}")
         print(traceback.format_exc())
         raise
     finally:
-        uow.close()
+        await uow.close()
