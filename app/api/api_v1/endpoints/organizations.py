@@ -19,7 +19,10 @@ async def get_organizations_by_building_address(
         house: str,
         service: organization_service_dep
 ) -> List[schemas.Organization]:
-    organizations = await service.get_organizations_by_building_address(city, street, house)
+    try:
+        organizations = await service.get_organizations_by_building_address(city, street, house)
+    except Exception as e:
+        raise HTTPException(400, str(e))
     if not organizations:
         raise HTTPException(404, "No data by this query")
     return organizations
@@ -31,7 +34,10 @@ async def get_organizations_by_activity(
         activity: str,
         service: organization_service_dep
 ) -> List[schemas.Organization]:
-    organizations = await service.get_organizations_by_activity(activity)
+    try:
+        organizations = await service.get_organizations_by_activity(activity)
+    except Exception as e:
+        raise HTTPException(400, str(e))
     if not organizations:
         raise HTTPException(404, "No data by this query")
     return organizations
@@ -43,7 +49,10 @@ async def get_organization_by_id(
         organization_id: int,
         service: organization_service_dep
 ) -> schemas.Organization | None:
-    organization = await service.get_organization_by_id(organization_id)
+    try:
+        organization = await service.get_organization_by_id(organization_id)
+    except Exception as e:
+        raise HTTPException(400, str(e))
     if not organization:
         raise HTTPException(404, "No data by this query")
     return organization
@@ -55,7 +64,10 @@ async def get_organization_by_name(
         name: str,
         service: organization_service_dep
 ) -> schemas.Organization | None:
-    organization = await service.get_organization_by_name(name)
+    try:
+        organization = await service.get_organization_by_name(name)
+    except Exception as e:
+        raise HTTPException(400, str(e))
     if not organization:
         raise HTTPException(404, "No data by this query")
     return organization
@@ -69,7 +81,10 @@ async def get_organizations_by_coordinates(
         radius: float,
         service: building_service_dep
 ) -> List[dict]:
-    buildings_organizations_dicts: list = await service.get_by_coordinates(latitude, longitude, radius)
+    try:
+        buildings_organizations_dicts: list = await service.get_buildings_with_organizations_by_coordinates(latitude, longitude, radius)
+    except Exception as e:
+        raise HTTPException(400, str(e))
     if not buildings_organizations_dicts:
         raise HTTPException(404, "No data by this query")
     return buildings_organizations_dicts
@@ -81,7 +96,10 @@ async def get_organizations_by_subactivities(
         activity: str,
         service: organization_service_dep
 ):
-    organizations = await service.get_organizations_by_subactivities(activity)
+    try:
+        organizations = await service.get_organizations_by_subactivities(activity)
+    except Exception as e:
+        raise HTTPException(400, str(e))
     if not organizations:
         raise HTTPException(404, "No data by this query")
     return organizations
