@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     DB_USER: str
     DB_PASS: str
     DB_NAME: str
+    MODE: str
     API_SECRET_KEY: str
 
     @property
