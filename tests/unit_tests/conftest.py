@@ -1,4 +1,7 @@
+import asyncio
+
 import pytest
+import pytest_asyncio
 
 from sqlalchemy import delete
 
@@ -6,7 +9,14 @@ from app.models import Building, OrganizationActivity, Activity, PhoneNumber, Or
 from app.db import AsyncSessionLocal
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="session")
+def event_loop(request):
+    loop = asyncio.new_event_loop()
+    yield loop
+    loop.close()
+
+
+@pytest_asyncio.fixture(scope='function')
 async def fill_buildings():
     async with AsyncSessionLocal() as session:
         try:
@@ -42,7 +52,11 @@ async def fill_buildings():
                 name="Org 2",
                 building_id=building2.id
             )
-            session.add_all((organization1, organization2))
+            organization3 = Organization(
+                name="Org 3",
+                building_id=building2.id
+            )
+            session.add_all((organization1, organization2, organization3))
             await session.flush()
 
             phone_number1 = PhoneNumber(
@@ -53,7 +67,11 @@ async def fill_buildings():
                 phone_number="987654321",
                 organization_id=organization2.id
             )
-            session.add_all((phone_number1, phone_number2))
+            phone_number3 = PhoneNumber(
+                phone_number="123123123",
+                organization_id=organization3.id
+            )
+            session.add_all((phone_number1, phone_number2, phone_number3))
             await session.flush()
 
             activity1 = Activity(name="Eat")
@@ -80,7 +98,6 @@ async def fill_buildings():
             await session.commit()
         finally:
             await session.close()
-
 
 
 @pytest.fixture(
