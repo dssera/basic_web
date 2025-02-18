@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories import BuildingRepository, ActivityRepository, OrganizationRepository
+from app.repositories import BuildingRepository, ActivityRepository, OrganizationRepository, UserRepository
 from app.db import AsyncSessionLocal
 
 
@@ -14,6 +14,7 @@ class UnitOfWork:
         self._building_repository = None
         self._activity_repository = None
         self._organization_repository = None
+        self._user_repository = None
 
     @property
     def building_repository(self):
@@ -32,6 +33,12 @@ class UnitOfWork:
         if self._organization_repository is None:
             self._organization_repository = OrganizationRepository(self.session)
         return self._organization_repository
+
+    @property
+    def user_repository(self):
+        if self._user_repository is None:
+            self._user_repository = UserRepository(self.session)
+        return self._user_repository
 
     async def commit(self):
         await self.session.commit()
