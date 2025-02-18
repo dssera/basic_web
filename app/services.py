@@ -1,11 +1,16 @@
+from datetime import timedelta, datetime, timezone
 from typing import List, Dict
 
 from geopy import Nominatim
 from geopy.adapters import AioHTTPAdapter
 from geopy.distance import distance
+import jwt
+from passlib.context import CryptContext
 
 from . import schemas
+from .schemas import UserInDb
 from .uow import unit_of_work
+from config import settings
 
 
 class BuildingService:
@@ -100,6 +105,40 @@ class OrganizationService:
     def validate_name(name: str):
         if not isinstance(name, str) or not name:
             raise ValueError("Invalid organization name. Name must be a non-empty string.")
+
+
+class AuthService:
+    def __init__(self, pwd_context: CryptContext):
+        self.pwd_context = pwd_context
+
+    async def get_user(self, username: str):
+        async with unit_of_work() as uow:
+            await uow.user_repository.get_user(username)
+
+    def verify_password(self, plain_password, hashed_password):
+        return self.pwd_context.verify(plain_password, hashed_password)
+
+    def get_password_hash(self, password):
+        return self.pwd_context.hash(password)
+
+    async def authenticate_user(self, username: str, password: str) -> UserInDb | bool:
+        async with unit_of_work() as uow:
+            user = await uow.user_repository.get_user(username)
+            if not user:
+                return False
+            if not self.verify_password(password, user.hashed_password):
+                return False
+            return user
+
+    def create_access_token(self, data: dict, expires_delta: timedelta | None = None):
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.now(timezone.utc) + expires_delta
+        else:
+            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, settings.ALGORITHM)
+        return encoded_jwt
 
 
 class GeoUtils:
