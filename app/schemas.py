@@ -63,4 +63,38 @@ class Activity(ActivityBase):
     organizations: List[Organization] = []
 
 
+class UserBase(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    username: str
+    disabled: bool = False
+    permissions: "List[Permission]"
+
+
+class User(UserBase):
+    pass
+
+
+class UserInDb(UserBase):
+    hashed_password: str
+
+
+class Permission(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str
+    details: str
+
+class Token(BaseModel):
+    access_token: str  # jwt token
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    scopes: List[str] = []
+
+
 Activity.model_rebuild()
+UserBase.model_rebuild()
+

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, Boolean
 from sqlalchemy.orm import relationship, Mapped
 
 from app.db import Base
@@ -74,3 +74,36 @@ class OrganizationActivity(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     organization_id = Column(Integer, ForeignKey("organizations.id"))
     activity_id = Column(Integer, ForeignKey("activities.id"))
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    disabled = Column(Boolean, default=False)
+
+    permissions = relationship("Permission",
+                                 secondary="user_permissions",
+                                 back_populates="users")
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    details = Column(String, nullable=True)
+
+    users = relationship("User",
+                               secondary="user_permissions",
+                               back_populates="permissions")
+
+
+class UserPermissions(Base):
+    __tablename__ = "user_permissions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    permission_id = Column(Integer, ForeignKey("permissions.id"))
