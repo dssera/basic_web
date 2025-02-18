@@ -167,7 +167,7 @@ class GeoUtils:
         async with Nominatim(user_agent="companies_app",
                              adapter_factory=AioHTTPAdapter) as geolocator:
             location = await geolocator.reverse(
-                (latitude, longitude), exactly_one=True)
+                (latitude, longitude), exactly_one=True, language="en")
             if not location:
                 return None
             address = location.raw['address']
