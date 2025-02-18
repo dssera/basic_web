@@ -120,3 +120,24 @@ class OrganizationRepository:
             if act:
                 organizations.update(act.organizations)
         return [schemas.Organization.model_validate(org) for org in organizations]
+
+
+class UserRepository:
+    def __init__(self, session: AsyncSession):
+        self.session = session
+
+    async def get_user(self, username) -> schemas.UserInDb | None:
+        print(username)
+        # relationships fields required
+        query = (select(models.User)
+                 .options(joinedload(models.User.permissions))
+                 .filter_by(username=username))
+        result = await self.session.execute(query)
+        user = result.scalar()
+
+        return schemas.UserInDb.model_validate(user) if user else None
+        # return schemas.UserInDb(
+        #     username="user",
+        #     hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+        # )
+
