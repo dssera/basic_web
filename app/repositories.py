@@ -27,13 +27,19 @@ class ActivityRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def get_all_subactivities(
+    async def __get_all_subactivities(
             self,
             activity_name,
             depth=0,
-            max_depth=3
+            max_depth=2
     ) -> list[schemas.Activity]:
-        query = select(models.Activity).filter_by(name=activity_name)
+        """
+            Get all subactivities of given activity (to include first parent activity use .get_all_subactivities())
+        """
+        query = (select(models.Activity)
+                 .options(joinedload(models.Activity.organizations)
+                          .joinedload(models.Organization.phone_numbers))
+                 .filter_by(name=activity_name))
         result = await self.session.execute(query)
         activity = result.scalar()
         if not activity or depth > max_depth:
@@ -42,10 +48,32 @@ class ActivityRepository:
         for child in activity.children:
             subactivities.append(child)
             subactivities.extend(
-                await self.get_all_subactivities(child.name, depth + 1, max_depth)
+                await self.__get_all_subactivities(child.name, depth + 1, max_depth)
             )
         return [schemas.Activity.model_validate(act) for
                 act in subactivities]
+
+    async def get_all_subactivities(
+            self,
+            activity_name,
+            depth=0,
+            max_depth=2
+    ) -> list[schemas.Activity] | None:
+        """
+             Uses .__get_all_subactivities() to get all subactivities and add first parent activity
+        """
+        query = (select(models.Activity)
+                 .options(joinedload(models.Activity.organizations)
+                          .joinedload(models.Organization.phone_numbers))
+                 .filter_by(name=activity_name))
+        result = await self.session.execute(query)
+        activity = result.scalar()
+        if activity:
+            subactivities = await self.__get_all_subactivities(activity_name, depth, max_depth)
+            subactivities.insert(0, schemas.Activity.model_validate(activity))
+            return subactivities
+        else:
+            return None
 
 
 class OrganizationRepository:
@@ -110,15 +138,48 @@ class OrganizationRepository:
         org = result.scalar()
         return schemas.Organization.model_validate(org) if org else None
 
-    async def find_organizations_by_activity(self, activity_name, subactivities: list[schemas.Activity]):
-        query = select().filter_by(name=activity_name)
-        result = await self.session.execute(query)
-        all_activities = result.scalars().all()
-        all_activities += subactivities
-        organizations = set()
-        for act in all_activities:
-            if act:
-                organizations.update(act.organizations)
+    # async def find_organizations_by_subactivities(
+    #         self, activity_name, subactivities: list[schemas.Activity]
+    # ) -> List[schemas.Organization]:
+    #     """
+    #     Takes activity and its subactivities and returns organizations that are related to these subactivities
+    #     (including first parent activity)
+    #
+    #     :param activity_name:
+    #     :param subactivities:
+    #     :return:
+    #     """
+    #     query = (select(models.Activity)
+    #              .options(joinedload(models.Activity.organizations)
+    #                       .joinedload(models.Organization.phone_numbers))
+    #              .filter_by(name=activity_name))
+    #     result = await self.session.execute(query)
+    #     all_activities = result.unique().scalars().all()
+    #     all_activities = [schemas.Activity.model_validate(act) for act in all_activities]
+    #     all_activities += subactivities
+    #     for act in all_activities:
+    #         print(f"all_all_activities({act.__class__}): ", act)
+    #
+    #     organizations = set()
+    #     for act in all_activities:
+    #         if act:
+    #             for org in act.organizations:
+    #                 organizations.add(org.name)
+    #     print("set organizations: ", organizations)
+    #     return [schemas.Organization.model_validate(org) for org in organizations]
+
+    async def find_organizations_by_subactivities(
+            self, activity_name, subactivities: list[schemas.Activity]
+    ) -> List[schemas.Organization]:
+        """
+            Takes activity and its subactivities and returns organizations that are related to these subactivities
+            (including first parent activity)
+        """
+        organizations = []
+        for act in subactivities:
+            for org in act.organizations:
+                if org not in organizations:
+                    organizations.append(org)
         return [schemas.Organization.model_validate(org) for org in organizations]
 
 
@@ -140,4 +201,3 @@ class UserRepository:
         #     username="user",
         #     hashed_password="$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
         # )
-

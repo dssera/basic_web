@@ -80,11 +80,19 @@ class OrganizationService:
     async def get_organizations_by_subactivities(
             self,
             activity: str
-    ) -> List[schemas.Organization]:
+    ) -> List[schemas.Organization] | None:
         self.validate_activity(activity)
         async with unit_of_work() as uow:
-            subactivities = await uow.activity_repository.get_all_subactivities(activity)
-            return await uow.organization_repository.find_organizations_by_activity(activity, subactivities)
+            subactivities: List[schemas.Activity] = await uow.activity_repository.get_all_subactivities(activity)
+            if not subactivities:
+                return None
+            # print()
+            # for act in subactivities:
+            #     print("class: ", type(act))
+            #     print("activity name:", act.name)
+            #     print("value: ", act)
+            # print()
+            return await uow.organization_repository.find_organizations_by_subactivities(activity, subactivities)
 
     @staticmethod
     def validate_address(city: str, street: str, house: str):
